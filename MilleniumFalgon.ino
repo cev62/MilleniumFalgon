@@ -60,34 +60,55 @@ void SetDriveLR(float left_percent_in, float right_percent_in)
     right_reverse = true;
   }
   
-  // Actuate!
-  if(!left_reverse)
-  {
-    digitalWrite(left_motor_direction_reverse, HIGH);
-    digitalWrite(left_motor_direction_forward, LOW);
-    analogWrite(left_motor_reverse, (int)(0));
-    analogWrite(left_motor_forward, (int)(255 * left_percent));
-  }
-  else
+  if(left_percent == 0.0)
   {
     digitalWrite(left_motor_direction_reverse, LOW);
-    digitalWrite(left_motor_direction_forward, HIGH);
-    analogWrite(left_motor_reverse, (int)(255 * left_percent));
+    digitalWrite(left_motor_direction_forward, LOW);
+    analogWrite(left_motor_reverse, (int)(0));
     analogWrite(left_motor_forward, (int)(0));
-  }
-  if(!right_reverse)
-  {
-    digitalWrite(right_motor_direction_reverse, HIGH);
-    digitalWrite(right_motor_direction_forward, LOW);
-    analogWrite(right_motor_reverse, (int)(0));
-    analogWrite(right_motor_forward, (int)(255 * right_percent));
   }
   else
   {
+    // Actuate!
+    if(!left_reverse)
+    {
+      digitalWrite(left_motor_direction_reverse, HIGH);
+      digitalWrite(left_motor_direction_forward, HIGH);
+      analogWrite(left_motor_reverse, (int)(0));
+      analogWrite(left_motor_forward, (int)(255 * left_percent));
+    }
+    else
+    {
+      digitalWrite(left_motor_direction_reverse, LOW);
+      digitalWrite(left_motor_direction_forward, HIGH);
+      analogWrite(left_motor_reverse, (int)(255 * left_percent));
+      analogWrite(left_motor_forward, (int)(0));
+    }
+  }
+  
+  if(right_percent == 0.0)
+  {
     digitalWrite(right_motor_direction_reverse, LOW);
-    digitalWrite(right_motor_direction_forward, HIGH);
-    analogWrite(right_motor_reverse, (int)(255 * right_percent));
+    digitalWrite(right_motor_direction_forward, LOW);
+    analogWrite(right_motor_reverse, (int)(0));
     analogWrite(right_motor_forward, (int)(0));
+  }
+  else
+  {
+    if(!right_reverse)
+    {
+      digitalWrite(right_motor_direction_reverse, HIGH);
+      digitalWrite(right_motor_direction_forward, LOW);
+      analogWrite(right_motor_reverse, (int)(0));
+      analogWrite(right_motor_forward, (int)(255 * right_percent));
+    }
+    else
+    {
+      digitalWrite(right_motor_direction_reverse, LOW);
+      digitalWrite(right_motor_direction_forward, HIGH);
+      analogWrite(right_motor_reverse, (int)(255 * right_percent));
+      analogWrite(right_motor_forward, (int)(0));
+    }
   }
   
   Serial.write((int)(10 * left_percent_in) + 48);
