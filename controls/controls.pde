@@ -81,5 +81,5 @@ void keyReleased()
 
 void setDrive(float left, float right)
 {
-  serial.write((int)(left * 255) + "," + (int)(right * 255) + ";");
+  serial.write((int)(left * 255*1.0) + "," + (int)(right * 255*1.0) + ";");
 }

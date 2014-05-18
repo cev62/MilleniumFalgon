@@ -1,3 +1,5 @@
+#include <SoftwareSerial.h>
+
 int left_motor_forward = 13;
 int left_motor_reverse = 11;
 int left_motor_direction_forward = 8;
@@ -7,6 +9,10 @@ int right_motor_forward = 6;
 int right_motor_reverse = 5;
 int right_motor_direction_forward = 3;
 int right_motor_direction_reverse = 2;
+
+int rx = 9;
+int tx = 10;
+SoftwareSerial blueSerial(rx, tx);
 
 float left_percent = 0.0;
 float right_percent = 0.0;
@@ -23,19 +29,21 @@ void setup()
   pinMode(right_motor_reverse, OUTPUT);
   pinMode(right_motor_direction_forward, OUTPUT);
   pinMode(right_motor_direction_reverse, OUTPUT);
+  blueSerial.begin(9600);
   Serial.begin(9600);
   SetDriveLR(0.0, 0.0);
 }
 
 void loop()
 {
-  while(Serial.available() > 0)
+  while(blueSerial.available() > 0)
   {
-    int left = Serial.parseInt();
-    int right = Serial.parseInt();
+    int left = blueSerial.parseInt();
+    int right = blueSerial.parseInt();
     
-    if(Serial.read() == ';')
+    if(blueSerial.read() == ';')
     {
+      blueSerial.print("Received");
       SetDriveLR((float)left / 255, (float)right / 255);
     }
   }
@@ -73,7 +81,7 @@ void SetDriveLR(float left_percent_in, float right_percent_in)
     if(!left_reverse)
     {
       digitalWrite(left_motor_direction_reverse, HIGH);
-      digitalWrite(left_motor_direction_forward, HIGH);
+      digitalWrite(left_motor_direction_forward, LOW);
       analogWrite(left_motor_reverse, (int)(0));
       analogWrite(left_motor_forward, (int)(255 * left_percent));
     }
@@ -113,4 +121,6 @@ void SetDriveLR(float left_percent_in, float right_percent_in)
   
   Serial.write((int)(10 * left_percent_in) + 48);
   Serial.write((int)(10 * right_percent_in) + 48);
+  blueSerial.write((int)(10 * left_percent_in) + 48);
+  blueSerial.write((int)(10 * right_percent_in) + 48);
 }
