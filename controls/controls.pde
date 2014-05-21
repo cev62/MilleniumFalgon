@@ -6,7 +6,7 @@ boolean up = false, down = false, left = false, right = false, key_change = fals
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, Serial.list()[0], 9600);
+ serial = new Serial(this, "COM15", 9600);
  serial.write(0);
 }
 

@@ -18,6 +18,6 @@ void loop()
   }
   if(blueSerial.available())
   {
-    Serial.write(Serial.read());
+    Serial.write(blueSerial.read());
   }
 }
