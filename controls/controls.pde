@@ -2,30 +2,39 @@ import processing.serial.*;
 
 Serial serial;
 boolean up = false, down = false, left = false, right = false, key_change = false;
+float left_power = 0;
+float right_power = 0;
+int timer;
 
 void setup()
 {
  println(Serial.list());
  serial = new Serial(this, "COM15", 9600);
- serial.write(0);
+ setDrive(0, 0);
+ timer = millis();
 }
 
 void draw()
 {
   if(key_change)
   {
-    float left_power = (up ? 1.0 : 0) + (down ? -1.0 : 0) + (left ? -1.0: 0) + (right ? 1.0 : 0);
-    float right_power = (up ? 1.0 : 0) + (down ? -1.0 : 0) + (left ? 1.0: 0) + (right ? -1.0 : 0);
+    left_power = (up ? 1.0 : 0) + (down ? -1.0 : 0) + (left ? -1.0: 0) + (right ? 1.0 : 0);
+    right_power = (up ? 1.0 : 0) + (down ? -1.0 : 0) + (left ? 1.0: 0) + (right ? -1.0 : 0);
     left_power = max(-1.0, min(1.0, left_power));
     right_power = max(-1.0, min(1.0, right_power));
-    setDrive(left_power, right_power);
     println("(" + left_power + ", " + right_power + ")");
     key_change = false;
   }
-  if(serial.available() > 0)
+  if(millis() - timer > 50)
   {
-    println(serial.read());
+    setDrive(left_power, right_power);
+    timer = millis();
   }
+  while(serial.available() > 0)
+  {
+    print((char)serial.read());
+  }
+  println();
 }
 
 void keyPressed()
