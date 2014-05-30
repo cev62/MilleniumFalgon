@@ -1,16 +1,42 @@
 import processing.serial.*;
 
+final int handshake_response_bluetooth = 240;
+final int handshake_response_wired = 208;
+final int handshake_begin = 224;
+final int handshake_end = 192;
+final int command_begin = 224;
+final int command_end = 192;
+final int data_max = 127;
+final int data_min = 0;
+
+final int handshake_response_timeout = 100; // milliseconds
+
 Serial serial;
+Command command;
 boolean up = false, down = false, left = false, right = false, key_change = false;
-float left_power = 0;
-float right_power = 0;
 int timer;
 
 void setup()
 {
  println(Serial.list());
  serial = new Serial(this, "COM15", 9600);
- setDrive(0, 0);
+ 
+ int response = handshake(serial, {1, 2, 3, 4}); // Password must be 4 digits right now
+ if(response == handshake_response_bluetooth)
+ {
+   println("Successfull handshake via bluetooth connection.");
+ }
+ else if(response == handshake_response_wired)
+ {
+   println("Successfull handshake via wired connection.");
+ }
+ else
+ {
+   println("Unsuccessfull handshake.");
+   throw new Exception("You done messed up");
+ }
+ 
+ command = new Command();
  timer = millis();
 }
 
@@ -18,49 +44,37 @@ void draw()
 {
   if(key_change)
   {
-    left_power = (up ? 1.0 : 0) + (down ? -1.0 : 0) + (left ? -1.0: 0) + (right ? 1.0 : 0);
-    right_power = (up ? 1.0 : 0) + (down ? -1.0 : 0) + (left ? 1.0: 0) + (right ? -1.0 : 0);
-    left_power = max(-1.0, min(1.0, left_power));
-    right_power = max(-1.0, min(1.0, right_power));
-    println("(" + left_power + ", " + right_power + ")");
+    command.up = up;
+    command.down = down;
+    command.left = left;
+    command.right = right;
+    sendCommand(serial, command);
+    println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
   }
-  if(millis() - timer > 50)
+  if(millis() - timer > 100)
   {
-    setDrive(left_power, right_power);
+    sendCommand(serial, command);
     timer = millis();
   }
-  while(serial.available() > 0)
+  if(serial.available())
   {
-    print((char)serial.read());
+    while(serial.available() > 0)
+    {
+      print((char)serial.read());
+    }
+    println();
   }
-  println();
 }
 
 void keyPressed()
 {
   if(key == CODED)
   {
-    if(keyCode == UP && !up)
-    {
-      up = true;
-      key_change = true;
-    }
-    if(keyCode == DOWN && !down)
-    {
-      down = true;
-      key_change = true;
-    }
-    if(keyCode == LEFT && !left)
-    {
-      left = true;
-      key_change = true;;
-    }
-    if(keyCode == RIGHT && !right)
-    {
-      right = true;
-      key_change = true;
-    }
+    if(keyCode == UP && !up){ up = true; key_change = true; }
+    if(keyCode == DOWN && !down){ down = true; key_change = true; }
+    if(keyCode == LEFT && !left){ left = true; key_change = true; }
+    if(keyCode == RIGHT && !right){ right = true; key_change = true; }
   }
 }
 
@@ -69,26 +83,117 @@ void keyReleased()
   key_change = true;
   if(key == CODED)
   {
-    if(keyCode == UP)
-    {
-      up = false;
-    }
-    if(keyCode == DOWN)
-    {
-      down = false;
-    }
-    if(keyCode == LEFT)
-    {
-      left = false;
-    }
-    if(keyCode == RIGHT)
-    {
-      right = false;
-    }
+    if(keyCode == UP){ up = false; }
+    if(keyCode == DOWN) { down = false; }
+    if(keyCode == LEFT) { left = false; }
+    if(keyCode == RIGHT) { right = false; }
   }
 }
 
-void setDrive(float left, float right)
+private class Command
 {
-  serial.write((int)(left * 255*1.0) + "," + (int)(right * 255*1.0) + ";");
+  // Fields contain the information of the command
+  boolean up, down, left, right;
+  Command()
+  {
+    up = false;
+    down = false;
+    left = false;
+    right = false;
+  }
+  
+  /*
+   * Exports the command to a series of bytes for transmission
+   */
+  int[] getData()
+  {
+    int[] data = new int[1];
+    // Puts the booleans into the 4 least significant digits of a single byte
+    data[0] = right ? 1 : 0 + left ? 2 : 0 + down ? 4 : 0 + up ? 8 : 0;
+    return data;
+  }
+}
+
+/*
+ * Returns a byte that is cleared to be sent to the robot
+ *
+ * @ensures output will be read by robot as data
+ */
+int sanitizeByte(int input)
+{
+  int output = input;
+  if(output > data_max || output < data_min)
+  {
+    output = 0;
+    println("Invalid data value: " + input + ". Sending 0 instead...");
+  }
+  return output;
+}
+
+/*
+ * Perform a handshake over a serial connection
+ * 1. Send handshake begin message (constant)
+ * 2. Send password
+ * 3. Send handshake end message (constant)
+ * 4. Wait for response intil timeout
+ * 5. If response times out, return 0
+ * 6. If response is received, and it is the handshake response bluetooth (constant)
+ *    or the handshake_response_wired (constant) then return that value
+ *
+ * @requires serial is an open serial connection 
+ */
+int handshake(Serial serial, int[] password)
+{
+  // Flush the serial buffer
+  while(serial.available())
+  {
+    serial.read();
+  }
+  
+  serial.write(handshake_begin);
+  for(int i = 0; i < password.length; i++)
+  {
+    serial.write(sanitizeByte(password[i]));
+  }
+  serial.write(handshake_end);
+  
+  int timeout = millis();
+  while(millis() - timeout < handshake_response_timeout)
+  {
+    // Wait for a response
+    
+    if(serial.available())
+    {
+      int response = serial.read();
+      if(response == handshake_response_bluetooth || response == handshake_response_wired)
+      {
+        return response;
+      }
+      else
+      {
+        return 0;
+      }
+    }
+  }
+  return 0;
+}
+
+/*
+ * Send a command to the robot with the following protocol
+ * 1. Send command begin message (constant)
+ * 2. Send command data
+ * 3. Send command end message (constant)
+ * 
+ * @requires serial is an open serial connection
+ * @requires command is initialized
+ */
+void sendCommand(Serial serial, Command command)
+{
+  serial.write(command_begin);
+  int[] data = command.getData();
+  for(int i = 0; i < data.length; i++)
+  {
+    serial.write(sanitizeByte(data[i]));
+  }
+  serial.write(command_end);
 }

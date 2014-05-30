@@ -12,6 +12,18 @@ int right_motor_direction_reverse = 3;
 
 float deadzone = 0.1;
 
+const int handshake_response_bluetooth = 240;
+const int handshake_response_wired = 208;
+const int handshake_begin = 224;
+const int handshake_end = 192;
+const int command_begin = 224;
+const int command_end = 192;
+const int data_max = 127;
+const int data_min = 0;
+
+const int data_length = 1;
+int[] password = {1, 2, 3, 4}; // Must be 4 digits right now
+
 int rx = 9;
 int tx = 10;
 SoftwareSerial blueSerial(rx, tx);
@@ -21,6 +33,8 @@ float right_percent;
 
 void SetMotor(int pwm_forward, int pwn_reverse, int direction_forward, int direction_reverse, float percent_power);
 void SetDriveLR();
+void DecodeCommand(int[] data);
+
 
 typedef enum ControlState
 {
@@ -30,8 +44,9 @@ typedef enum ControlState
 } ControlState;
 
 ControlState state;
-int watchdog_timeout = 1000;
+int watchdog_timeout = 150;
 unsigned long watchdog_timer_start;
+bool blue_handshake = false, wired_handshake = false;
 
 void setup()
 {
@@ -68,16 +83,75 @@ void loop()
   bool is_bluetooth_received = blueSerial.available();
   if(is_bluetooth_received)
   {
-    int left = blueSerial.parseInt();
-    int right = blueSerial.parseInt();
-    if(blueSerial.read() == ';')
+    if(blue_handshake)
     {
-      left_percent = (float)left / 255;
-      right_percent = (float)right / 255;
-      state = BLUETOOTH;
-      blueSerial.println("State: BLUETOOTH (received)");
-      Serial.println("State: BLUETOOTH (received)");
-      watchdog_timer_start = millis();
+      bool is_command_begun = false;
+      int data[1];
+      int data_index = 0;
+      while(blueSerial.available() > 0)
+      {
+        input = blueSerial.read();
+        if(is_command_begun)
+        {
+          if(input == command_end)
+          {
+            DecodeData(data);
+            state = BLUETOOTH;
+            blueSerial.println("State: BLUETOOTH (received)");
+            Serial.println("State: BLUETOOTH (received)");
+            watchdog_timer_start = millis();
+            is_command_begun = false;
+            data_index = 0;
+          }
+          if(data_index < data_length)
+          {
+            data[data_index] = input;
+            data_index++;
+          }
+        }
+        is_command_begun = input == command_begun;
+      }
+      
+      ///////int left = blueSerial.parseInt();
+      int right = blueSerial.parseInt();
+      if(blueSerial.read() == ';')
+      {
+        left_percent = (float)left / 255;
+        right_percent = (float)right / 255;
+        state = BLUETOOTH;
+        blueSerial.println("State: BLUETOOTH (received)");
+        Serial.println("State: BLUETOOTH (received)");
+        watchdog_timer_start = millis();
+      }
+    }
+    else
+    {
+      bool is_handshake_begun = false;
+      int password_index = 0;
+      bool is_password_passed = true;
+      while(blueSerial.available() > 0)
+      {
+        input = blueSerial.read();
+        if(is_handshake_begun)
+        {
+          if(input == handshake_end)
+          {
+            if(pasword_index < 3){ is_password_passed = false;}
+            if(is_password_passed)
+            {
+              blueSerial.write(handshake_response_bluetooth);
+              blue_handshake = true;
+            }
+            else
+            {
+              blueSerial.write(0);
+            }
+          }
+          if(input != password[password_index]){ is_password_passed = false; }
+          password_index++;
+        }
+        is_handshake_begun = input == handshake_begin;
+      }
     }
   }  
   
@@ -154,4 +228,25 @@ void SetDriveLR()
 {
   SetMotor(left_motor_forward, left_motor_reverse, left_motor_direction_forward, left_motor_direction_reverse, left_percent);
   SetMotor(right_motor_forward, right_motor_reverse, right_motor_direction_forward, right_motor_direction_reverse, right_percent);
+}
+
+
+void DecodeCommand(int[] data)
+{
+  bool up = false, down = false, left = false, right = false;
+  int a = data[0];
+  int b = a % 16;
+  int c = b % 8;
+  int d = c % 4;
+  int e = d % 2;
+  up = b != c;
+  down = c != d;
+  left = d != e;
+  right = e == 1;
+  
+  left_percent = up ? 1.0 : 0 + down ? -1.0 : 0 + left ? -1.0 : 0.0 + right ? 1.0 : 0;
+  right_percent = up ? 1.0 : 0 + down ? -1.0 : 0 + left ? 1.0 : 0.0 + right ? -1.0 : 0;
+  
+  left_percent = min(max(left_percent, -1.0), 1.0);
+  right_percent = min(max(right_percent, -1.0), 1.0);
 }
