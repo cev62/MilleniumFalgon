@@ -22,7 +22,7 @@ const int data_max = 127;
 const int data_min = 0;
 
 const int data_length = 1;
-int[] password = {1, 2, 3, 4}; // Must be 4 digits right now
+int password[] = {1, 2, 3, 4}; // Must be 4 digits right now
 
 int rx = 9;
 int tx = 10;
@@ -33,7 +33,7 @@ float right_percent;
 
 void SetMotor(int pwm_forward, int pwn_reverse, int direction_forward, int direction_reverse, float percent_power);
 void SetDriveLR();
-void DecodeCommand(int[] data);
+void DecodeCommand(int data[]);
 
 
 typedef enum ControlState
@@ -85,43 +85,33 @@ void loop()
   {
     if(blue_handshake)
     {
+      //Serial.println("Command");
       bool is_command_begun = false;
-      int data[1];
+      int data = 0;
       int data_index = 0;
+      delay(30);
       while(blueSerial.available() > 0)
       {
-        input = blueSerial.read();
+        int input = blueSerial.read();
         if(is_command_begun)
         {
           if(input == command_end)
           {
-            DecodeData(data);
+            DecodeCommand(data);
+            
             state = BLUETOOTH;
             blueSerial.println("State: BLUETOOTH (received)");
-            Serial.println("State: BLUETOOTH (received)");
+            SetDriveLR();
+            //Serial.println("State: BLUETOOTH (received)");
+            //Serial.println("DDD");
+            //Serial.println(data);
             watchdog_timer_start = millis();
             is_command_begun = false;
-            data_index = 0;
+            break;
           }
-          if(data_index < data_length)
-          {
-            data[data_index] = input;
-            data_index++;
-          }
+          data = input;
         }
-        is_command_begun = input == command_begun;
-      }
-      
-      ///////int left = blueSerial.parseInt();
-      int right = blueSerial.parseInt();
-      if(blueSerial.read() == ';')
-      {
-        left_percent = (float)left / 255;
-        right_percent = (float)right / 255;
-        state = BLUETOOTH;
-        blueSerial.println("State: BLUETOOTH (received)");
-        Serial.println("State: BLUETOOTH (received)");
-        watchdog_timer_start = millis();
+        is_command_begun = input == command_begin || is_command_begun;
       }
     }
     else
@@ -131,26 +121,34 @@ void loop()
       bool is_password_passed = true;
       while(blueSerial.available() > 0)
       {
-        input = blueSerial.read();
+        int input = blueSerial.read();
         if(is_handshake_begun)
         {
+          Serial.println("begin");
           if(input == handshake_end)
           {
-            if(pasword_index < 3){ is_password_passed = false;}
+            Serial.println("end");
+            blueSerial.write(handshake_response_bluetooth);//handshake_response_bluetooth);
+            Serial.write(handshake_response_bluetooth);//handshake_response_bluetooth);
+            blue_handshake = true;
+            break;
+            /*if(password_index < 3){ is_password_passed = false;}
             if(is_password_passed)
             {
               blueSerial.write(handshake_response_bluetooth);
               blue_handshake = true;
+              Serial.println("pass");
             }
             else
             {
-              blueSerial.write(0);
-            }
+              blueSerial.write((byte)0);
+              Serial.println("fail");
+            }*/
           }
-          if(input != password[password_index]){ is_password_passed = false; }
-          password_index++;
+          //if(input != password[password_index]){ is_password_passed = false; }
+          //password_index++;
         }
-        is_handshake_begun = input == handshake_begin;
+        is_handshake_begun = input == handshake_begin || is_handshake_begun;
       }
     }
   }  
@@ -226,15 +224,17 @@ void SetMotor(int pwm_forward, int pwm_reverse, int direction_forward, int direc
 
 void SetDriveLR()
 {
+  Serial.println("Set Motor");
+  Serial.println(left_percent);
   SetMotor(left_motor_forward, left_motor_reverse, left_motor_direction_forward, left_motor_direction_reverse, left_percent);
   SetMotor(right_motor_forward, right_motor_reverse, right_motor_direction_forward, right_motor_direction_reverse, right_percent);
 }
 
 
-void DecodeCommand(int[] data)
+void DecodeCommand(int data)
 {
   bool up = false, down = false, left = false, right = false;
-  int a = data[0];
+  int a = data;
   int b = a % 16;
   int c = b % 8;
   int d = c % 4;
@@ -249,4 +249,5 @@ void DecodeCommand(int[] data)
   
   left_percent = min(max(left_percent, -1.0), 1.0);
   right_percent = min(max(right_percent, -1.0), 1.0);
+  
 }

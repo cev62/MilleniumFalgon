@@ -9,7 +9,8 @@ final int command_end = 192;
 final int data_max = 127;
 final int data_min = 0;
 
-final int handshake_response_timeout = 100; // milliseconds
+int[] password = {1, 2, 3, 4};
+final int handshake_response_timeout = 1000; // milliseconds
 
 Serial serial;
 Command command;
@@ -21,7 +22,7 @@ void setup()
  println(Serial.list());
  serial = new Serial(this, "COM15", 9600);
  
- int response = handshake(serial, {1, 2, 3, 4}); // Password must be 4 digits right now
+ int response = handshake(serial, password); // Password must be 4 digits right now
  if(response == handshake_response_bluetooth)
  {
    println("Successfull handshake via bluetooth connection.");
@@ -33,8 +34,8 @@ void setup()
  else
  {
    println("Unsuccessfull handshake.");
-   throw new Exception("You done messed up");
  }
+ println("Response: " + response);
  
  command = new Command();
  timer = millis();
@@ -57,7 +58,7 @@ void draw()
     sendCommand(serial, command);
     timer = millis();
   }
-  if(serial.available())
+  if(serial.available() > 0)
   {
     while(serial.available() > 0)
     {
@@ -105,11 +106,12 @@ private class Command
   /*
    * Exports the command to a series of bytes for transmission
    */
-  int[] getData()
+  int getData()
   {
-    int[] data = new int[1];
+    int data = 0;
     // Puts the booleans into the 4 least significant digits of a single byte
-    data[0] = right ? 1 : 0 + left ? 2 : 0 + down ? 4 : 0 + up ? 8 : 0;
+    data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
+    println(data);
     return data;
   }
 }
@@ -145,37 +147,40 @@ int sanitizeByte(int input)
 int handshake(Serial serial, int[] password)
 {
   // Flush the serial buffer
-  while(serial.available())
+  while(serial.available() > 0)
   {
     serial.read();
   }
-  
+  println("Start");
   serial.write(handshake_begin);
-  for(int i = 0; i < password.length; i++)
+  /*for(int i = 0; i < password.length; i++)
   {
     serial.write(sanitizeByte(password[i]));
-  }
+  }*/
   serial.write(handshake_end);
   
   int timeout = millis();
   while(millis() - timeout < handshake_response_timeout)
   {
     // Wait for a response
+    println("Waiting");
     
-    if(serial.available())
+    if(serial.available() > 0)
     {
       int response = serial.read();
-      if(response == handshake_response_bluetooth || response == handshake_response_wired)
+      println("Actual: " + response);
+      return response;
+      /*if(response == handshake_response_bluetooth || response == handshake_response_wired)
       {
         return response;
       }
       else
       {
         return 0;
-      }
+      }*/
     }
   }
-  return 0;
+  return -1;
 }
 
 /*
@@ -189,11 +194,8 @@ int handshake(Serial serial, int[] password)
  */
 void sendCommand(Serial serial, Command command)
 {
+  int data = sanitizeByte(command.getData());
   serial.write(command_begin);
-  int[] data = command.getData();
-  for(int i = 0; i < data.length; i++)
-  {
-    serial.write(sanitizeByte(data[i]));
-  }
+  serial.write(data);
   serial.write(command_end);
 }
