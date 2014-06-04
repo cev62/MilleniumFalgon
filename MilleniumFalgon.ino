@@ -251,3 +251,72 @@ void DecodeCommand(int data)
   right_percent = min(max(right_percent, -1.0), 1.0);
   
 }
+
+class PIDController
+{
+public:
+  void Reset();
+  PIDController(float p, float i, float d);
+  void SetInput(float input_in);
+  float GetOutput();
+  void SetSetpoint(float setpoint_in);
+  void Start();
+private:
+  float error, prev_error, total_error, kP, kI, kD, input, setpoint, output, dt;
+  int timer;
+};
+
+PIDController::PIDController(float p, float i, float d)
+{
+  kP = p;
+  kI = i;
+  kD = d;
+  Reset();
+  timer = 0;
+}
+
+void PIDController::SetSetpoint(float setpoint_in)
+{
+  setpoint = setpoint_in;
+}
+
+void PIDController::SetInput(float input_in)
+{
+  input = input_in;
+  int new_timer = millis();
+  dt = (float)(new_timer - timer) / 1000;
+  timer = new_timer;
+}
+
+float PIDController::GetOutput()
+{
+  error = input - setpoint;
+  total_error += error * dt;
+  float delta_error = (error - prev_error) / dt;
+  
+  output = kP*error + kI*total_error + kD*delta_error;
+  output = min(max(output, -1.0), 1.0);
+  
+  prev_error = error;
+  
+  return output;
+}
+
+void PIDController::Start()
+{
+  Reset();
+  timer = millis();
+}
+
+void PIDController::Reset()
+{
+  error = 0;
+  prev_error = 0;
+  total_error = 0;
+  input = 0;
+  setpoint = 0;
+  output = 0;
+  timer = millis();
+}
+
+
