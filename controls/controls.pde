@@ -50,7 +50,7 @@ void draw()
     command.left = left;
     command.right = right;
     sendCommand(serial, command);
-    println("(" + up + ", " + down + ", " + left + ", " + right + ")");
+    //println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
   }
   if(millis() - timer > 100)
@@ -111,7 +111,7 @@ private class Command
     int data = 0;
     // Puts the booleans into the 4 least significant digits of a single byte
     data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
-    println(data);
+    //println(data);
     return data;
   }
 }
