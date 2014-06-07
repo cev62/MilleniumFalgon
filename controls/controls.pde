@@ -10,17 +10,18 @@ final int data_max = 127;
 final int data_min = 0;
 
 int[] password = {1, 2, 3, 4};
-final int handshake_response_timeout = 1000; // milliseconds
+final int handshake_response_timeout = 3000; // milliseconds
 
 Serial serial;
 Command command;
 boolean up = false, down = false, left = false, right = false, key_change = false;
+int arm_state = 0;
 int timer;
 
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, "ACM0", 9600);
+ serial = new Serial(this, /*"/dev/ttyACM1"*/ "/dev/rfcomm0", 9600);
  
  int response = handshake(serial, password); // Password must be 4 digits right now
  if(response == handshake_response_bluetooth)
@@ -49,6 +50,7 @@ void draw()
     command.down = down;
     command.left = left;
     command.right = right;
+    command.arm = arm_state * 16;
     sendCommand(serial, command);
     //println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
@@ -63,8 +65,9 @@ void draw()
     while(serial.available() > 0)
     {
       print((char)serial.read());
+      //serial.read();
     }
-    println();
+    //println();
   }
 }
 
@@ -77,6 +80,10 @@ void keyPressed()
     if(keyCode == LEFT && !left){ left = true; key_change = true; }
     if(keyCode == RIGHT && !right){ right = true; key_change = true; }
   }
+  if(key == 'a'){arm_state = 0; key_change = true; }
+  if(key == 's'){arm_state = 1; key_change = true; }
+  if(key == 'd'){arm_state = 2; key_change = true; }
+  if(key == 'f'){arm_state = 3; key_change = true; }
 }
 
 void keyReleased()
@@ -95,12 +102,14 @@ private class Command
 {
   // Fields contain the information of the command
   boolean up, down, left, right;
+  int arm;
   Command()
   {
     up = false;
     down = false;
     left = false;
     right = false;
+    arm = 0;
   }
   
   /*
@@ -110,7 +119,7 @@ private class Command
   {
     int data = 0;
     // Puts the booleans into the 4 least significant digits of a single byte
-    data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
+    data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0) + arm;
     //println(data);
     return data;
   }

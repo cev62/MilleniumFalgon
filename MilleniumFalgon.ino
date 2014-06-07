@@ -55,7 +55,7 @@ typedef enum ControlState
 } ControlState;
 
 ControlState state;
-int watchdog_timeout = 150;
+int watchdog_timeout = 200;
 unsigned long watchdog_timer_start;
 bool blue_handshake = false, wired_handshake = false;
 
@@ -137,6 +137,7 @@ void loop()
       while(blueSerial.available() > 0)
       {
         int input = blueSerial.read();
+        blueSerial.println(input);
         if(is_handshake_begun)
         {
           Serial.println("begin");
