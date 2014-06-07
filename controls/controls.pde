@@ -20,7 +20,7 @@ int timer;
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, "COM15", 9600);
+ serial = new Serial(this, "ACM0", 9600);
  
  int response = handshake(serial, password); // Password must be 4 digits right now
  if(response == handshake_response_bluetooth)

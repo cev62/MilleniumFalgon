@@ -1,4 +1,5 @@
 #include <SoftwareSerial.h>
+#include <Servo.h>
 
 int left_motor_forward = 13;
 int left_motor_reverse = 11;
@@ -11,6 +12,12 @@ int right_motor_direction_forward = 2;
 int right_motor_direction_reverse = 3;
 
 float deadzone = 0.1;
+
+int arm_pin = 4;
+int arm_stop_angle = -1;
+int arm_store_angle = 43;
+int arm_down_angle = 180;
+int arm_mid_angle = 135;
 
 const int handshake_response_bluetooth = 240;
 const int handshake_response_wired = 208;
@@ -30,6 +37,10 @@ SoftwareSerial blueSerial(rx, tx);
 
 float left_percent;
 float right_percent;
+
+int arm_angle;
+
+Servo arm;
 
 void SetMotor(int pwm_forward, int pwn_reverse, int direction_forward, int direction_reverse, float percent_power);
 void SetDriveLR();
@@ -58,6 +69,10 @@ void setup()
   pinMode(right_motor_reverse, OUTPUT);
   pinMode(right_motor_direction_forward, OUTPUT);
   pinMode(right_motor_direction_reverse, OUTPUT);
+  
+  arm.attach(arm_pin);
+  arm_angle = -1;
+  arm.detach();
   
   left_percent = 0.0;
   right_percent = 0.0;
@@ -156,7 +171,76 @@ void loop()
   bool is_wired_received = Serial.available();
   if(is_wired_received)
   {
-    int left = Serial.parseInt();
+    if(wired_handshake)
+    {
+      //Serial.println("Command");
+      bool is_command_begun = false;
+      int data = 0;
+      int data_index = 0;
+      delay(30);
+      while(Serial.available() > 0)
+      {
+        int input = Serial.read();
+        if(is_command_begun)
+        {
+          if(input == command_end)
+          {
+            DecodeCommand(data);
+            
+            state = WIRED;
+            Serial.println("State: WIRED (received)");
+            SetDriveLR();
+            //Serial.println("State: BLUETOOTH (received)");
+            //Serial.println("DDD");
+            //Serial.println(data);
+            watchdog_timer_start = millis();
+            is_command_begun = false;
+            break;
+          }
+          data = input;
+        }
+        is_command_begun = input == command_begin || is_command_begun;
+      }
+    }
+    else
+    {
+      bool is_handshake_begun = false;
+      int password_index = 0;
+      bool is_password_passed = true;
+      while(Serial.available() > 0)
+      {
+        int input = Serial.read();
+        if(is_handshake_begun)
+        {
+          Serial.println("begin");
+          if(input == handshake_end)
+          {
+            Serial.println("end");
+            blueSerial.write(handshake_response_wired);//handshake_response_bluetooth);
+            Serial.write(handshake_response_wired);//handshake_response_bluetooth);
+            wired_handshake = true;
+            break;
+            /*if(password_index < 3){ is_password_passed = false;}
+            if(is_password_passed)
+            {
+              blueSerial.write(handshake_response_bluetooth);
+              blue_handshake = true;
+              Serial.println("pass");
+            }
+            else
+            {
+              blueSerial.write((byte)0);
+              Serial.println("fail");
+            }*/
+          }
+          //if(input != password[password_index]){ is_password_passed = false; }
+          //password_index++;
+        }
+        is_handshake_begun = input == handshake_begin || is_handshake_begun;
+      }
+    }
+    
+    /*int left = Serial.parseInt();
     int right = Serial.parseInt();
     if(Serial.read() == ';')
     {
@@ -166,22 +250,27 @@ void loop()
       blueSerial.println("State: WIRED (received)");
       Serial.println("State: WIRED (received)");
       watchdog_timer_start = millis();
-    }
+    }*/
   }
   
   if(state == NONE)
   {
     left_percent = 0.0;
     right_percent = 0.0;
+    arm.detach();
     SetDriveLR();
   }
   else if (state == BLUETOOTH)
   {
     SetDriveLR();
+    if(arm_angle == arm_stop_angle) {arm.detach();}
+    else {arm.attach(arm_pin); arm.write(arm_angle);}
   }
   else if (state == WIRED)
   {
     SetDriveLR();
+    if(arm_angle == -1) {arm.detach();}
+    else {arm.attach(arm_pin); arm.write(arm_angle);}
   }
   
 }
@@ -224,8 +313,8 @@ void SetMotor(int pwm_forward, int pwm_reverse, int direction_forward, int direc
 
 void SetDriveLR()
 {
-  Serial.println("Set Motor");
-  Serial.println(left_percent);
+  //Serial.println("Set Motor");
+  //Serial.println(left_percent);
   SetMotor(left_motor_forward, left_motor_reverse, left_motor_direction_forward, left_motor_direction_reverse, left_percent);
   SetMotor(right_motor_forward, right_motor_reverse, right_motor_direction_forward, right_motor_direction_reverse, right_percent);
 }
@@ -233,7 +322,7 @@ void SetDriveLR()
 
 void DecodeCommand(int data)
 {
-  bool up = false, down = false, left = false, right = false;
+  /*bool up = false, down = false, left = false, right = false;
   int a = data;
   int b = a % 16;
   int c = b % 8;
@@ -242,13 +331,47 @@ void DecodeCommand(int data)
   up = b != c;
   down = c != d;
   left = d != e;
-  right = e == 1;
+  right = e == 1;*/
   
-  left_percent = up ? 1.0 : 0 + down ? -1.0 : 0 + left ? -1.0 : 0.0 + right ? 1.0 : 0;
-  right_percent = up ? 1.0 : 0 + down ? -1.0 : 0 + left ? 1.0 : 0.0 + right ? -1.0 : 0;
+  int up = data & 8;
+  int down = data & 4;
+  int left = data & 2;
+  int right = data & 1;
+  
+  int servo_a = data & 16;
+  int servo_b = data & 32;
+  
+  if (!servo_a && !servo_b) {arm_angle = arm_stop_angle;}
+  if (servo_a && !servo_b) {arm_angle = arm_store_angle;}
+  if (!servo_a && servo_b) {arm_angle = arm_mid_angle;}
+  if (servo_a && servo_b) {arm_angle = arm_down_angle;}
+  
+  //left_percent = up ? 1.0 : 0 + down ? -1.0 : 0 + left ? -1.0 : 0.0 + right ? 1.0 : 0;
+  //right_percent = up ? 1.0 : 0 + down ? -1.0 : 0 + left ? 1.0 : 0.0 + right ? -1.0 : 0;
+  
+  if(up && down){up = 0; down = 0;}
+  if(left && right){left = 0; right = 0;}
+  if(up && left){left_percent = 0.0; right_percent = 1.0;}
+  if(up && right){left_percent = 1.0; right_percent = 0.0;}
+  if(down && left){left_percent = -1.0; right_percent = 0.0;}
+  if(down && right){left_percent = 0.0; right_percent = -1.0;}
+  if(up && !right && !left){left_percent = 1.0; right_percent = 1.0;}
+  if(down && !right && !left){left_percent = -1.0; right_percent = -1.0;}
+  if(left && !up && !down){left_percent = -1.0; right_percent = 1.0;}
+  if(right && !up && !down){left_percent = 1.0; right_percent = -1.0;}
+  if(!left && !right && !up && !down){left_percent = 0.0; right_percent = 0.0;}
   
   left_percent = min(max(left_percent, -1.0), 1.0);
   right_percent = min(max(right_percent, -1.0), 1.0);
+  
+  /*if(up){Serial.write('u');}
+  if(down){Serial.write('d');}
+  if(left){Serial.write('l');}
+  if(right){Serial.write('r');}
+  if(servo_a){Serial.write('a');}
+  if(servo_b){Serial.write('b');}
+  Serial.write(arm_angle);
+  Serial.write('\n');*/
   
 }
 
