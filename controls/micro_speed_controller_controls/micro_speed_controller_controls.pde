@@ -1,7 +1,5 @@
 import processing.serial.*;
 
-final int handshake_response_bluetooth = 240;
-final int handshake_response_wired = 208;
 final int handshake_begin = 224;
 final int handshake_end = 192;
 final int command_begin = 224;
@@ -9,35 +7,15 @@ final int command_end = 192;
 final int data_max = 127;
 final int data_min = 0;
 
-int[] password = {1, 2, 3, 4};
-final int handshake_response_timeout = 3000; // milliseconds
-
 Serial serial;
 Command command;
 boolean up = false, down = false, left = false, right = false, key_change = false;
-int arm_state = 0;
 int timer;
 
 void setup()
 {
  println(Serial.list());
  serial = new Serial(this, /*"/dev/ttyACM1"*/ "/dev/ttyACM0", 9600);
- 
- int response = handshake(serial, password); // Password must be 4 digits right now
- if(response == handshake_response_bluetooth)
- {
-   println("Successfull handshake via bluetooth connection.");
- }
- else if(response == handshake_response_wired)
- {
-   println("Successfull handshake via wired connection.");
- }
- else
- {
-   println("Unsuccessfull handshake.");
- }
- println("Response: " + response);
- 
  command = new Command();
  timer = millis();
 }
@@ -139,57 +117,6 @@ int sanitizeByte(int input)
     println("Invalid data value: " + input + ". Sending 0 instead...");
   }
   return output;
-}
-
-/*
- * Perform a handshake over a serial connection
- * 1. Send handshake begin message (constant)
- * 2. Send password
- * 3. Send handshake end message (constant)
- * 4. Wait for response intil timeout
- * 5. If response times out, return 0
- * 6. If response is received, and it is the handshake response bluetooth (constant)
- *    or the handshake_response_wired (constant) then return that value
- *
- * @requires serial is an open serial connection 
- */
-int handshake(Serial serial, int[] password)
-{
-  // Flush the serial buffer
-  while(serial.available() > 0)
-  {
-    serial.read();
-  }
-  println("Start");
-  serial.write(handshake_begin);
-  /*for(int i = 0; i < password.length; i++)
-  {
-    serial.write(sanitizeByte(password[i]));
-  }*/
-  serial.write(handshake_end);
-  
-  int timeout = millis();
-  while(millis() - timeout < handshake_response_timeout)
-  {
-    // Wait for a response
-    println("Waiting");
-    
-    if(serial.available() > 0)
-    {
-      int response = serial.read();
-      println("Actual: " + response);
-      return response;
-      /*if(response == handshake_response_bluetooth || response == handshake_response_wired)
-      {
-        return response;
-      }
-      else
-      {
-        return 0;
-      }*/
-    }
-  }
-  return -1;
 }
 
 /*
