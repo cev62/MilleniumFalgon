@@ -74,7 +74,6 @@ void loop()
   bool is_received = Serial.available();
   if(is_received)
   {
-    Serial.println("Command");
     bool is_command_begun = false;
     int data = 0;
     int data_index = 0;
@@ -152,6 +151,9 @@ void SetDriveLR()
 {
   SetMotor(left_motor_forward, left_motor_reverse, left_motor_direction_forward, left_motor_direction_reverse, left_percent);
   SetMotor(right_motor_forward, right_motor_reverse, right_motor_direction_forward, right_motor_direction_reverse, right_percent);
+  Serial.print(left_percent);
+  Serial.write(",");
+  Serial.println(right_percent);
 }
 
 
