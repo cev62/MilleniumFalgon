@@ -15,7 +15,7 @@ int timer;
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, /*"/dev/ttyACM1"*/ "/dev/ttyACM0", 9600);
+ serial = new Serial(this, "COM9", 9600);
  command = new Command();
  timer = millis();
 }
@@ -28,7 +28,6 @@ void draw()
     command.down = down;
     command.left = left;
     command.right = right;
-    command.arm = arm_state * 16;
     sendCommand(serial, command);
     //println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
@@ -58,10 +57,6 @@ void keyPressed()
     if(keyCode == LEFT && !left){ left = true; key_change = true; }
     if(keyCode == RIGHT && !right){ right = true; key_change = true; }
   }
-  if(key == 'a'){arm_state = 0; key_change = true; }
-  if(key == 's'){arm_state = 1; key_change = true; }
-  if(key == 'd'){arm_state = 2; key_change = true; }
-  if(key == 'f'){arm_state = 3; key_change = true; }
 }
 
 void keyReleased()
@@ -87,17 +82,18 @@ private class Command
     down = false;
     left = false;
     right = false;
-    arm = 0;
   }
   
   /*
    * Exports the command to a series of bytes for transmission
    */
-  int getData()
+  int[] getData()
   {
-    int data = 0;
+    int[] data = new int[2];
     // Puts the booleans into the 4 least significant digits of a single byte
-    data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0) + arm;
+    //data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
+    data[0] = up ? 63 : 0;
+    data[1] = up ? 63 : 0;
     //println(data);
     return data;
   }
@@ -130,8 +126,11 @@ int sanitizeByte(int input)
  */
 void sendCommand(Serial serial, Command command)
 {
-  int data = sanitizeByte(command.getData());
+  int[] data = command.getData();
   serial.write(command_begin);
-  serial.write(data);
+  for(int i = 0; i < data.length; i++)
+  {
+    serial.write(sanitizeByte(data[i]));
+  }
   serial.write(command_end);
 }
