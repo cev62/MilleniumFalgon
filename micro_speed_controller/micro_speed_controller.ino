@@ -18,10 +18,6 @@ const int data_max = 127;
 const int data_min = 0;
 const int data_length = 2;
 
-int rx = 2;
-int tx = 3;
-SoftwareSerial softSerial(rx, tx);
-
 int left_power;
 int right_power;
 
@@ -51,11 +47,13 @@ void setup()
   pinMode(right_motor_direction_forward, OUTPUT);
   pinMode(right_motor_direction_reverse, OUTPUT);
   
-  left_power = 0.0;
-  right_power = 0.0;
+  pinMode(13, OUTPUT);
+  
+  left_power = 0;
+  right_power = 0;
   SetDriveLR();
   
-  softSerial.begin(9600);
+  Serial1.begin(9600);
   Serial.begin(9600);
   
   state = NONE;
@@ -69,8 +67,7 @@ void loop()
     // Watchdog timed out: revert to control state NONE
     state = NONE;
     Serial.println("Watchdog timeout...");
-  }  
-  
+  }
   if(Serial.available())
   {
     bool is_command_begun = false;
@@ -98,24 +95,30 @@ void loop()
     }
   }    
   
-  if(softSerial.available())
+  if(Serial1.available())
   {
     bool is_command_begun = false;
     int data[data_length];
     int data_index = 0;
     delay(30);
-    while(softSerial.available() > 0)
+    while(Serial1.available() > 0)
     {
-      int input = softSerial.read();
+      int input = Serial1.read();
       if(is_command_begun)
       {
-        if(input == command_end || data_index > data_length)
+        if(input == command_end && data_index == data_length)
         {
           DecodeCommand(data);
           state = RUN;
           SetDriveLR();
           watchdog_timer_start = millis();
           is_command_begun = false;
+          break;
+        }
+        if((input == command_end && data_index < data_length) || data_index > data_length)
+        {
+          // Bad command
+          Serial.println("Bad command");
           break;
         }
         data[data_index] = input;
@@ -178,9 +181,7 @@ void SetDriveLR()
 {
   SetMotor(left_motor_forward, left_motor_reverse, left_motor_direction_forward, left_motor_direction_reverse, left_power);
   SetMotor(right_motor_forward, right_motor_reverse, right_motor_direction_forward, right_motor_direction_reverse, right_power);
-  Serial.print(left_power);
-  Serial.write(",");
-  Serial.println(right_power);
+  
 }
 
 
@@ -190,7 +191,14 @@ void DecodeCommand(int *data)
   left_power = data[0] & 127;
   if(left_power & 64){ left_power = left_power - 128; }
   right_power = data[1] & 127;
-  if(right_power & 64){ left_power = left_power - 128; }
-
+  if(right_power & 64){ right_power = right_power - 128; }
+  Serial.print("Data: ");
+  Serial.print(left_power);
+  Serial.print(", ");
+  Serial.println(right_power);
+  Serial1.print("softData: ");
+  Serial1.print(data[0]);
+  Serial1.print(", ");
+  Serial1.println(data[1]);
 }
 

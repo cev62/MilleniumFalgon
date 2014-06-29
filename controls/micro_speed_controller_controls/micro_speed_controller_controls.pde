@@ -1,7 +1,5 @@
 import processing.serial.*;
 
-final int handshake_begin = 224;
-final int handshake_end = 192;
 final int command_begin = 224;
 final int command_end = 192;
 final int data_max = 127;
@@ -93,7 +91,7 @@ private class Command
     // Puts the booleans into the 4 least significant digits of a single byte
     //data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
     data[0] = up ? 63 : 0;
-    data[1] = up ? 63 : 0;
+    data[1] = up ? 30 : 0;
     //println(data);
     return data;
   }
