@@ -145,24 +145,49 @@ void loop()
 void SetDriveLR()
 {
   Serial1.write(command_begin);
+  
+  byte left_data = abs(left_power);
+  if(left_power < 0)
+  {
+    left_data |= 64;
+  }
+  byte right_data = abs(right_power);
+  if(right_power < 0)
+  {
+    right_data |= 64;
+  }
+  
   Serial1.write(left_power);
   Serial1.write(right_power);
-  Serial1.write(command_end);
-  //Serial.print(left_power);
-  //Serial.print(",");
-  //Serial.println(right_power);
+  //Serial1.write(command_end);
 }
 
 
 void DecodeCommand(int *data)
 { 
-  left_power = data[0] & 127;
-  if(left_power & 64){ left_power = left_power - 128; }
-  right_power = data[1] & 127;
-  if(right_power & 64){ right_power = right_power - 128; }
+  int right = data[0] & 1;
+  int left = data[0] & 2;
+  int down = data[0] & 4;
+  int up = data[0] & 8;
   
-  int servo_a = data[2] & 16;
-  int servo_b = data[2] & 32;
+  left_power = 0;
+  right_power = 0;
+  
+  if(up != 0)   { left_power += 63; right_power += 63; }
+  if(down != 0) { left_power -= 63; right_power -= 63; }
+  if(left != 0) { left_power -= 63; right_power += 63; }
+  if(right != 0){ left_power += 63; right_power -= 63; }
+  
+  left_power = min(63, max(-63, left_power));
+  right_power = min(63, max(-63, right_power));
+  
+  Serial.print("data: ");
+  Serial.print(left_power);
+  Serial.print(", ");
+  Serial.println(right_power);
+  
+  int servo_a = data[1] & 16;
+  int servo_b = data[1] & 32;
   
   if (!servo_a && !servo_b) {arm_angle = arm_stop_angle;}
   if (servo_a && !servo_b) {arm_angle = arm_store_angle;}

@@ -14,7 +14,7 @@ int timer;
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, /*"/dev/ttyACM1"*/ "/dev/ttyACM0", 9600);
+ serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM6", 9600);
  command = new Command();
  timer = millis();
 }
@@ -92,15 +92,14 @@ private class Command
   /*
    * Exports the command to a series of bytes for transmission
    */
-  int getData()
+  int[] getData()
   {
-    int[] data = new int[3];
+    int[] data = new int[2];
     // Puts the booleans into the 4 least significant digits of a single byte
     //data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0) + arm;
     //println(data);
-    data[0] = up ? 63 : 0;
-    data[1] = up ? 63 : 0;
-    data[2] = arm;
+    data[0] = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
+    data[1] = arm;
     return data;
   }
 }

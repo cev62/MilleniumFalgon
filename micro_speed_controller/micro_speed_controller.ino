@@ -100,13 +100,22 @@ void loop()
     bool is_command_begun = false;
     int data[data_length];
     int data_index = 0;
-    delay(30);
+    delay(10);
     while(Serial1.available() > 0)
     {
       int input = Serial1.read();
+      
+      if(input == command_begin)
+      {
+        is_command_begun = true;
+        continue;
+      }
+      
       if(is_command_begun)
       {
-        if(input == command_end && data_index == data_length)
+        data[data_index++] = input;
+        
+        if(data_index == data_length)
         {
           DecodeCommand(data);
           state = RUN;
@@ -115,14 +124,12 @@ void loop()
           is_command_begun = false;
           break;
         }
-        if((input == command_end && data_index < data_length) || data_index > data_length)
+        if(data_index > data_length)
         {
           // Bad command
           Serial.println("Bad command");
           break;
         }
-        data[data_index] = input;
-        data_index++;
       }
       is_command_begun = input == command_begin || is_command_begun;
     }
@@ -138,7 +145,6 @@ void loop()
   {
     SetDriveLR();
   }
-  delay(50);
 }
 
 void SetMotor(int pwm_forward, int pwm_reverse, int direction_forward, int direction_reverse, int power_in)
@@ -189,16 +195,12 @@ void DecodeCommand(int *data)
 {  
   // [-64,63]
   left_power = data[0] & 127;
-  if(left_power & 64){ left_power = left_power - 128; }
+  if(left_power & 64){ left_power = -(left_power - 64); }
   right_power = data[1] & 127;
-  if(right_power & 64){ right_power = right_power - 128; }
+  if(right_power & 64){ right_power = -(right_power - 64); }
   Serial.print("Data: ");
   Serial.print(left_power);
   Serial.print(", ");
   Serial.println(right_power);
-  Serial1.print("softData: ");
-  Serial1.print(data[0]);
-  Serial1.print(", ");
-  Serial1.println(data[1]);
 }
 
