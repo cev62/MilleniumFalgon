@@ -7,6 +7,12 @@ int arm_store_angle = 43;
 int arm_down_angle = 180;
 int arm_mid_angle = 135;
 
+int box_pin = 5;
+int box_stop_angle = -1;
+int box_store_angle = 0;
+int box_down_angle = 135;
+int box_mid_angle = 45;
+
 const int command_begin = 224;
 const int command_end = 192;
 const int data_max = 127;
@@ -22,8 +28,10 @@ int left_power;
 int right_power;
 
 int arm_angle;
+int box_angle;
 
 Servo arm;
+Servo box;
 
 void DecodeCommand(int *data);
 
@@ -36,7 +44,8 @@ typedef enum ControlState
 
 ControlState state;
 int watchdog_timeout = 200;
-unsigned long watchdog_timer_start;
+int micro_timeout = 50;
+unsigned long watchdog_timer_start, micro_timer;
 bool blue_handshake = false, wired_handshake = false;
 
 void setup()
@@ -45,6 +54,10 @@ void setup()
   //arm.attach(arm_pin);
   arm_angle = -1;
   arm.detach();
+  
+  //box.attach(arm_pin);
+  box_angle = -1;
+  box.detach();
   
   left_power = 0;
   right_power = 0;
@@ -56,6 +69,7 @@ void setup()
   
   state = NONE;
   watchdog_timer_start = millis();
+  micro_timer = millis();
 }
 
 void loop()
@@ -66,14 +80,13 @@ void loop()
     state = NONE;
     Serial.println("Watchdog timeout...");
     blueSerial.println("Watchdog timeout...");
-  }  
+  }
   
-  if(Serial.available())
+  while(Serial.available() > data_length + 1)
   {
     bool is_command_begun = false;
     int data[data_length];
     int data_index = 0;
-    delay(30);
     while(Serial.available() > 0)
     {
       int input = Serial.read();
@@ -131,6 +144,7 @@ void loop()
     left_power = 0;
     right_power = 0;
     arm.detach();
+    box.detach();
     SetDriveLR();
   }
   else if (state == RUN)
@@ -138,13 +152,20 @@ void loop()
     SetDriveLR();
     if(arm_angle == arm_stop_angle) {arm.detach();}
     else {arm.attach(arm_pin); arm.write(arm_angle);}
+    if(box_angle == box_stop_angle) {box.detach();}
+    else {box.attach(box_pin); box.write(box_angle);}
   }
   
 }
 
 void SetDriveLR()
 {
-  Serial1.write(command_begin);
+  if(millis() - micro_timer < micro_timeout || state != RUN)
+  {
+    // Not time to send a new command yet
+    return;
+  }  
+  micro_timer = millis();
   
   byte left_data = abs(left_power);
   if(left_power < 0)
@@ -157,9 +178,10 @@ void SetDriveLR()
     right_data |= 64;
   }
   
-  Serial1.write(left_power);
-  Serial1.write(right_power);
-  //Serial1.write(command_end);
+  Serial1.write(command_begin);
+  Serial1.write(left_data);
+  Serial1.write(right_data);
+  Serial1.write(command_end);
 }
 
 
@@ -181,11 +203,6 @@ void DecodeCommand(int *data)
   left_power = min(63, max(-63, left_power));
   right_power = min(63, max(-63, right_power));
   
-  Serial.print("data: ");
-  Serial.print(left_power);
-  Serial.print(", ");
-  Serial.println(right_power);
-  
   int servo_a = data[1] & 16;
   int servo_b = data[1] & 32;
   
@@ -194,6 +211,22 @@ void DecodeCommand(int *data)
   if (!servo_a && servo_b) {arm_angle = arm_mid_angle;}
   if (servo_a && servo_b) {arm_angle = arm_down_angle;}
   
+  int box_a = data[2] & 16;
+  int box_b = data[2] & 32;
+  
+  if (!box_a && !box_b) {box_angle = box_stop_angle;}
+  if (box_a && !box_b) {box_angle = box_store_angle;}
+  if (!box_a && box_b) {box_angle = box_mid_angle;}
+  if (box_a && box_b) {box_angle = box_down_angle;}
+    
+  Serial.print("data: ");
+  Serial.print(left_power);
+  Serial.print(", ");
+  Serial.print(right_power);
+  Serial.print(", ");
+  Serial.print(arm_angle);
+  Serial.print(", ");
+  Serial.println(box_angle);
   
 }
 

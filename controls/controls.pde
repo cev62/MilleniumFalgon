@@ -9,12 +9,13 @@ Serial serial;
 Command command;
 boolean up = false, down = false, left = false, right = false, key_change = false;
 int arm_state = 0;
+int box_state = 0;
 int timer;
 
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM6", 9600);
+ serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM16", 9600);
  command = new Command();
  timer = millis();
 }
@@ -28,6 +29,7 @@ void draw()
     command.left = left;
     command.right = right;
     command.arm = arm_state * 16;
+    command.box = box_state * 16;
     sendCommand(serial, command);
     //println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
@@ -61,6 +63,11 @@ void keyPressed()
   if(key == 's'){arm_state = 1; key_change = true; }
   if(key == 'd'){arm_state = 2; key_change = true; }
   if(key == 'f'){arm_state = 3; key_change = true; }
+  
+  if(key == 'z'){box_state = 0; key_change = true; }
+  if(key == 'x'){box_state = 1; key_change = true; }
+  if(key == 'c'){box_state = 2; key_change = true; }
+  if(key == 'v'){box_state = 3; key_change = true; }
 }
 
 void keyReleased()
@@ -79,7 +86,7 @@ private class Command
 {
   // Fields contain the information of the command
   boolean up, down, left, right;
-  int arm;
+  int arm, box;
   Command()
   {
     up = false;
@@ -87,6 +94,7 @@ private class Command
     left = false;
     right = false;
     arm = 0;
+    box = 0;
   }
   
   /*
@@ -94,12 +102,13 @@ private class Command
    */
   int[] getData()
   {
-    int[] data = new int[2];
+    int[] data = new int[3];
     // Puts the booleans into the 4 least significant digits of a single byte
     //data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0) + arm;
     //println(data);
     data[0] = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
     data[1] = arm;
+    data[2] = box;
     return data;
   }
 }

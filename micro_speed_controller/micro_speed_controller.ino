@@ -79,13 +79,50 @@ void loop()
       int input = Serial.read();
       if(is_command_begun)
       {
-        if(input == command_end || data_index > data_length)
+        if(input == command_end && data_index == data_length)
         {
           DecodeCommand(data);
           state = RUN;
           SetDriveLR();
           watchdog_timer_start = millis();
           is_command_begun = false;
+          break;
+        }
+        if(data_index > data_length)
+        {
+          Serial.println("Bad Command");
+          break;
+        }
+        data[data_index] = input;
+        data_index++;
+      }
+      is_command_begun = input == command_begin || is_command_begun;
+    }
+  } 
+  
+  if(Serial1.available())
+  {
+    bool is_command_begun = false;
+    int data[data_length];
+    int data_index = 0;
+    delay(30);
+    while(Serial1.available() > 0)
+    {
+      int input = Serial1.read();
+      if(is_command_begun)
+      {
+        if(input == command_end && data_index == data_length)
+        {
+          DecodeCommand(data);
+          state = RUN;
+          SetDriveLR();
+          watchdog_timer_start = millis();
+          is_command_begun = false;
+          break;
+        }
+        if(data_index > data_length)
+        {
+          Serial.println("Bad Command");
           break;
         }
         data[data_index] = input;
@@ -95,12 +132,12 @@ void loop()
     }
   }    
   
-  if(Serial1.available())
+  /*if(Serial1.available())
   {
     bool is_command_begun = false;
     int data[data_length];
     int data_index = 0;
-    delay(10);
+    delay(30);
     while(Serial1.available() > 0)
     {
       int input = Serial1.read();
@@ -133,7 +170,7 @@ void loop()
       }
       is_command_begun = input == command_begin || is_command_begun;
     }
-  }    
+  }    */
   
   if(state == NONE)
   {
@@ -199,8 +236,8 @@ void DecodeCommand(int *data)
   right_power = data[1] & 127;
   if(right_power & 64){ right_power = -(right_power - 64); }
   Serial.print("Data: ");
-  Serial.print(left_power);
+  Serial.print(data[0]);
   Serial.print(", ");
-  Serial.println(right_power);
+  Serial.println(data[1]);
 }
 
