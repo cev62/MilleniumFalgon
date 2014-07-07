@@ -13,7 +13,7 @@ int timer;
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, "COM9", 9600);
+ serial = new Serial(this, "COM17", 9600);
  command = new Command();
  timer = millis();
 }
@@ -90,9 +90,28 @@ private class Command
     int[] data = new int[2];
     // Puts the booleans into the 4 least significant digits of a single byte
     //data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
-    data[0] = up ? 63 : 0;
-    data[1] = up ? 30 : 0;
-    //println(data);
+    //data[0] = up ? 63 : 0;
+   // data[1] = up ? 30 : 0;
+    
+    int left_power = 0;
+    int right_power = 0;
+    
+    if(up)   { left_power += 63; right_power += 63; }
+    if(down) { left_power -= 63; right_power -= 63; }
+    if(left) { left_power -= 63; right_power += 63; }
+    if(right){ left_power += 63; right_power -= 63; }
+    left_power = min(63, max(-63, left_power));
+    right_power = min(63, max(-63, right_power));
+    
+    data[0] = abs(left_power);
+    if(left_power < 0){
+      data[0] |= 64;
+    }
+    data[1] = abs(right_power);
+    if(right_power < 0){
+      data[1] |= 64;
+    }
+    
     return data;
   }
 }
@@ -130,5 +149,5 @@ void sendCommand(Serial serial, Command command)
   {
     serial.write(sanitizeByte(data[i]));
   }
-  serial.write(command_end);
+  //serial.write(command_end);
 }

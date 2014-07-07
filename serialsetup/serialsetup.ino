@@ -1,21 +1,26 @@
 #include <SoftwareSerial.h>
 
-//SoftwareSerial softSerial(9, 10); // RX, TX
-int i = 0;
+SoftwareSerial softSerial(9, 10); // RX, TX
 void setup()
 {
   Serial.begin(9600);
-  Serial1.begin(9600);
+  softSerial.begin(9600);
   pinMode(13, OUTPUT);
 }
 
 void loop()
 {
   //Serial.println("Hi");
-  /*if(Serial.available())
+  if(Serial.available())
   {
-    softSerial.print(Serial.read());
-  }*/
+    char c = Serial.read();
+    softSerial.print(c);
+    Serial.write(c);
+  }
+  if(softSerial.available())
+  {
+    Serial.write(softSerial.read());
+  }
   //softSerial.println("leonardo");
   //Serial.println("leonardo");
   //delay(100);
@@ -39,11 +44,11 @@ void loop()
   
   //softSerial.print("hi");
   
-  Serial1.print('h');
+  /*Serial1.print('h');
   digitalWrite(13, HIGH);
   delay(100);
   Serial1.print('l');
   digitalWrite(13, LOW);
-  delay(100);
+  delay(100);*/
   
 }

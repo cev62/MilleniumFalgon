@@ -4,14 +4,14 @@
 int arm_pin = 4;
 int arm_stop_angle = -1;
 int arm_store_angle = 43;
-int arm_down_angle = 180;
-int arm_mid_angle = 135;
+int arm_mid_angle = 125;
+int arm_down_angle = 170;
 
 int box_pin = 5;
 int box_stop_angle = -1;
-int box_store_angle = 0;
-int box_down_angle = 135;
-int box_mid_angle = 45;
+int box_store_angle = 35;
+int box_mid_angle = 150;
+int box_down_angle = 180;
 
 const int command_begin = 224;
 const int command_end = 192;
@@ -32,6 +32,8 @@ int box_angle;
 
 Servo arm;
 Servo box;
+int servo_min = 500;
+int servo_max = 2500;
 
 void DecodeCommand(int *data);
 
@@ -108,12 +110,11 @@ void loop()
     }
   }      
   
-  if(blueSerial.available())
+  while(blueSerial.available() > data_length + 1)
   {
     bool is_command_begun = false;
     int data[data_length];
     int data_index = 0;
-    delay(30);
     while(blueSerial.available() > 0)
     {
       int input = blueSerial.read();
@@ -133,7 +134,7 @@ void loop()
       }
       is_command_begun = input == command_begin || is_command_begun;
     }
-  }    
+  }     
   
   if(Serial1.available()){
     Serial.write(Serial1.read());
@@ -151,9 +152,9 @@ void loop()
   {
     SetDriveLR();
     if(arm_angle == arm_stop_angle) {arm.detach();}
-    else {arm.attach(arm_pin); arm.write(arm_angle);}
+    else {arm.attach(arm_pin, servo_min, servo_max); arm.write(arm_angle);}
     if(box_angle == box_stop_angle) {box.detach();}
-    else {box.attach(box_pin); box.write(box_angle);}
+    else {box.attach(box_pin, servo_min, servo_max); box.write(box_angle);}
   }
   
 }
