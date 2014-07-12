@@ -3,6 +3,7 @@
 
 #include "comm.h"
 #include "gyro.h"
+#include "milleniumencoder.h"
 #include "Arduino.h"
 #include <Servo.h>
 
@@ -20,7 +21,7 @@ public:
   ControlState control_state;
   bool is_arm_attached;
   bool is_box_attached;
-  long int watchdog_timer;
+  long int watchdog_timer, state_print_timer;
 } State;
 
 
@@ -38,6 +39,7 @@ public:
   State *state;
   Comm *comm;
   GyroAccel *gyro;
+  MilleniumEncoder *left_encoder, *right_encoder;
   Servo *arm, *box;
 };
 

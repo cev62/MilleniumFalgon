@@ -8,8 +8,14 @@ Robot::Robot()
   state->micro_command = new MicroCommand;
   DisableState();
   
+  state->is_arm_attached = false;
+  state->is_box_attached = false;
+  
   gyro = new GyroAccel();
   gyro->Reset();
+  
+  left_encoder = new MilleniumEncoder(11, 12, false);
+  right_encoder = new MilleniumEncoder(6, 7, true);
   
   arm = new Servo;
   box = new Servo;
@@ -27,7 +33,7 @@ void Robot::UpdateComm()
   if(state->next_command->is_fresh_command)
   {
     DecodeCommand(state);
-    //state->watchdog_timer = millis();
+    state->watchdog_timer = millis();
   }
   
   //Check if the watchdog timer has failed
@@ -36,18 +42,41 @@ void Robot::UpdateComm()
     state->control_state = DISABLED;
     Serial.println("Watchdog timeout...");
   }
+  
+  if(millis() - state->state_print_timer > 200)
+  {
+    Serial.println();
+    Serial.println("Millenium Falgon State: ");
+    Serial.print("Drive power: ");
+    Serial.print(state->left_power);
+    Serial.print(", ");
+    Serial.println(state->right_power);
+    Serial.print("Arm angle: ");
+    Serial.println(state->arm_angle);
+    Serial.print("Box angle: ");
+    Serial.println(state->box_angle);
+    Serial.print("Gyro: ");
+    Serial.println(gyro->angle[2]);
+    Serial.print("Encoder: ");
+    Serial.print(left_encoder->counts);
+    Serial.print(", ");
+    Serial.println(right_encoder->counts);
+    state->state_print_timer = millis();
+  }
 }
 
 void Robot::UpdateSensors()
 {
-  
+  gyro->Update();
+  left_encoder->Update();
+  right_encoder->Update();
 }
 
 void Robot::Actuate()
 {
   if(state->control_state == DISABLED)
   {
-    
+    DisableState();
   }
   
   if(state->control_state == TELEOP)
@@ -119,7 +148,5 @@ void Robot::DisableState()
   state->arm_angle = -1;
   state->box_angle = -1;
   state->control_state = DISABLED;
-  state->is_arm_attached = false;
-  state->is_box_attached = false;
   state->watchdog_timer = millis();
 }

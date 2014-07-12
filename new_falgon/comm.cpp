@@ -16,7 +16,6 @@ blue_serial(9, 10)
 
 void Comm::Update(Command *target_command)
 {
-  Serial.println("Heartbeat");
   for(int mode = 0; mode < 2; mode++)
   {
     while(SerialAvailable(mode) > data_length + 1)

@@ -2,6 +2,7 @@
 #include "robot.h"
 #include "comm.h"
 #include "gyro.h"
+#include "milleniumencoder.h"
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include <Servo.h>
@@ -18,5 +19,5 @@ void loop()
   robot->UpdateComm();
   robot->UpdateSensors();
   robot->Actuate();
-  delay(10);
+  delay(5);
 }

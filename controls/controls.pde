@@ -15,7 +15,7 @@ int timer;
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM6", 9600);
+ serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM16", 9600);
  command = new Command();
  timer = millis();
 }
