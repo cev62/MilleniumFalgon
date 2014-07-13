@@ -10,6 +10,7 @@ Robot::Robot()
   
   state->is_arm_attached = false;
   state->is_box_attached = false;
+  state->csv_output = false;
   
   gyro = new GyroAccel();
   gyro->Reset();
@@ -43,24 +44,55 @@ void Robot::UpdateComm()
     Serial.println("Watchdog timeout...");
   }
   
-  if(millis() - state->state_print_timer > 200)
+  if(millis() - state->state_print_timer > 20)
   {
-    Serial.println();
-    Serial.println("Millenium Falgon State: ");
-    Serial.print("Drive power: ");
-    Serial.print(state->left_power);
-    Serial.print(", ");
-    Serial.println(state->right_power);
-    Serial.print("Arm angle: ");
-    Serial.println(state->arm_angle);
-    Serial.print("Box angle: ");
-    Serial.println(state->box_angle);
-    Serial.print("Gyro: ");
-    Serial.println(gyro->angle[2]);
-    Serial.print("Encoder: ");
-    Serial.print(left_encoder->counts);
-    Serial.print(", ");
-    Serial.println(right_encoder->counts);
+    if(!state->csv_output)
+    {
+      Serial.println();
+      Serial.println("Millenium Falgon State: ");
+      Serial.print("Drive power: ");
+      Serial.print(state->left_power);
+      Serial.print(", ");
+      Serial.println(state->right_power);
+      Serial.print("Arm angle: ");
+      Serial.println(state->arm_angle);
+      Serial.print("Box angle: ");
+      Serial.println(state->box_angle);
+      Serial.print("Gyro: ");
+      Serial.println(gyro->angle[2]);
+      Serial.print("Encoder: ");
+      Serial.print(left_encoder->counts);
+      Serial.print(", ");
+      Serial.println(right_encoder->counts);
+      Serial.print("Encoder Vel: ");
+      Serial.print(left_encoder->velocity);
+      Serial.print(", ");
+      Serial.println(right_encoder->velocity);
+    }
+    else
+    {
+      Serial.print(millis());
+      Serial.print(",");
+      Serial.print(state->left_power);
+      Serial.print(",");
+      Serial.print(state->right_power);
+      Serial.print(",");
+      Serial.print(state->arm_angle);
+      Serial.print(",");
+      Serial.print(state->box_angle);
+      Serial.print(",");
+      Serial.print(gyro->angle[2]);
+      Serial.print(",");
+      Serial.print(gyro->velocity[1]);
+      Serial.print(",");
+      Serial.print(left_encoder->counts);
+      Serial.print(",");
+      Serial.print(right_encoder->counts);
+      Serial.print(",");
+      Serial.print(left_encoder->velocity);
+      Serial.print(",");
+      Serial.println(right_encoder->velocity);
+    }
     state->state_print_timer = millis();
   }
 }
@@ -131,6 +163,7 @@ void Robot::DecodeCommand(State *state)
   state->curr_command->arm_angle = state->next_command->arm_angle;
   state->curr_command->box_angle = state->next_command->box_angle;
   state->curr_command->control_state = state->next_command->control_state;
+  state->curr_command->csv_output = state->next_command->csv_output;
   state->next_command->is_fresh_command = false;
   
   // Update the state based on the new current command
@@ -139,6 +172,7 @@ void Robot::DecodeCommand(State *state)
   state->arm_angle = state->curr_command->arm_angle;
   state->box_angle = state->curr_command->box_angle;
   state->control_state = state->curr_command->control_state;
+  state->csv_output = state->curr_command->csv_output;
 }
 
 void Robot::DisableState()

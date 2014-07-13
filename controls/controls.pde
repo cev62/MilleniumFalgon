@@ -11,6 +11,7 @@ boolean up = false, down = false, left = false, right = false, key_change = fals
 int arm_state = 0;
 int box_state = 0;
 int timer;
+boolean csv_output = true;
 
 void setup()
 {
@@ -30,6 +31,7 @@ void draw()
     command.right = right;
     command.arm = arm_state * 16;
     command.box = box_state * 16;
+    command.csv_output = csv_output;
     sendCommand(serial, command);
     //println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
@@ -68,6 +70,9 @@ void keyPressed()
   if(key == 'x'){box_state = 1; key_change = true; }
   if(key == 'c'){box_state = 2; key_change = true; }
   if(key == 'v'){box_state = 3; key_change = true; }
+  
+  if(key == 'q'){csv_output = false; key_change = true; }
+  if(key == 'w'){csv_output = true; key_change = true; }
 }
 
 void keyReleased()
@@ -85,7 +90,7 @@ void keyReleased()
 private class Command
 {
   // Fields contain the information of the command
-  boolean up, down, left, right;
+  boolean up, down, left, right, csv_output;
   int arm, box;
   Command()
   {
@@ -95,6 +100,7 @@ private class Command
     right = false;
     arm = 0;
     box = 0;
+    csv_output = false;
   }
   
   /*
@@ -102,13 +108,14 @@ private class Command
    */
   int[] getData()
   {
-    int[] data = new int[3];
+    int[] data = new int[4];
     // Puts the booleans into the 4 least significant digits of a single byte
     //data = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0) + arm;
     //println(data);
     data[0] = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
     data[1] = arm;
     data[2] = box;
+    data[3] = csv_output ? 1 : 0;
     return data;
   }
 }

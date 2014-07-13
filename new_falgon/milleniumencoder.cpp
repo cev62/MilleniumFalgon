@@ -13,6 +13,11 @@ MilleniumEncoder::MilleniumEncoder(int pin_a_in, int pin_b_in, bool is_inverted_
   counts = 0;
   delta_counts = 0;
   is_inverted = is_inverted_in;
+  period = 0;
+  velocity = 0.0;
+  meters = 0.0;
+  
+  max_period = 200;
 }
 
 void MilleniumEncoder::Update()
@@ -23,6 +28,7 @@ void MilleniumEncoder::Update()
   
   if(a != prev_a)
   {
+    Serial.println("C");
     // Change
     if(a == b)
     {
@@ -34,11 +40,38 @@ void MilleniumEncoder::Update()
       // Moving backward
       delta_counts = -1;
     }
-  }
-  if(is_inverted)
-  {
+    
+    if(is_inverted)
+    {
     delta_counts = -delta_counts;
+    }
+    
+    // TODO: Add in direction change logic
+    if(delta_counts * velocity < 0)
+    {
+      // Direction change: set vel to 0
+      velocity = 0.0;
+      last_count = millis();
+    }
+    else
+    {
+      period = millis() - last_count;
+      last_count = millis();
+      velocity = 1000.0 / period * delta_counts;
+    }
   }
+  
   prev_a = a;
   counts += delta_counts;
+  
+  if(millis() - last_count > max_period){ velocity = 0.0; }
+  
+  //meters = CountsToMeters(counts);
+  //velocity = CountsToMeters(velocity);
+  
+}
+
+float MilleniumEncoder::CountsToMeters(int counts)
+{
+  return ((float)counts) * 2.75 * 3.14 / 48.0 * 2.54 / 100.0;
 }

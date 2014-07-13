@@ -19,5 +19,5 @@ void loop()
   robot->UpdateComm();
   robot->UpdateSensors();
   robot->Actuate();
-  delay(5);
+  delay(1);
 }

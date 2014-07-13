@@ -93,6 +93,8 @@ void Comm::EncodeCommand(int *data, Command *target_command)
   if (!box_a && box_b) {target_command->box_angle = 35;}
   if (box_a && box_b) {target_command->box_angle = 160;}
   
+  target_command->csv_output = data[3] != 0;
+  
   target_command->control_state = TELEOP;
   
   target_command->is_fresh_command = true;

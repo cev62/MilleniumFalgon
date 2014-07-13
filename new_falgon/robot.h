@@ -21,6 +21,7 @@ public:
   ControlState control_state;
   bool is_arm_attached;
   bool is_box_attached;
+  bool csv_output;
   long int watchdog_timer, state_print_timer;
 } State;
 

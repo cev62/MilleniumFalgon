@@ -17,6 +17,7 @@ typedef struct Command
   int right_power;
   int arm_angle;
   int box_angle;
+  bool csv_output;
   ControlState control_state;
   bool is_fresh_command;
 } Command;
