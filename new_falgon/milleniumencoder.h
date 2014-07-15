@@ -11,7 +11,7 @@ public:
   float CountsToMeters(int counts);
   int counts, delta_counts, pin_a, pin_b, prev_a, period;
   long int last_count;
-  float velocity, meters;
+  float velocity, meters, velocity_meters;
   bool is_inverted;
   int max_period;
 };

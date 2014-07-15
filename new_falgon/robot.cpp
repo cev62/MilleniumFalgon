@@ -61,13 +61,17 @@ void Robot::UpdateComm()
       Serial.print("Gyro: ");
       Serial.println(gyro->angle[2]);
       Serial.print("Encoder: ");
-      Serial.print(left_encoder->counts);
+      Serial.print(left_encoder->meters);
       Serial.print(", ");
-      Serial.println(right_encoder->counts);
+      Serial.println(right_encoder->meters);
       Serial.print("Encoder Vel: ");
       Serial.print(left_encoder->velocity);
       Serial.print(", ");
       Serial.println(right_encoder->velocity);
+      Serial.print("Encoder Vel Meters: ");
+      Serial.print(left_encoder->velocity_meters);
+      Serial.print(", ");
+      Serial.println(right_encoder->velocity_meters);
     }
     else
     {
@@ -85,13 +89,17 @@ void Robot::UpdateComm()
       Serial.print(",");
       Serial.print(gyro->velocity[1]);
       Serial.print(",");
-      Serial.print(left_encoder->counts);
+      Serial.print(left_encoder->meters);
       Serial.print(",");
-      Serial.print(right_encoder->counts);
+      Serial.print(right_encoder->meters);
       Serial.print(",");
       Serial.print(left_encoder->velocity);
       Serial.print(",");
-      Serial.println(right_encoder->velocity);
+      Serial.print(right_encoder->velocity);
+      Serial.print(",");
+      Serial.print(left_encoder->velocity_meters);
+      Serial.print(",");
+      Serial.println(right_encoder->velocity_meters);
     }
     state->state_print_timer = millis();
   }

@@ -16,6 +16,7 @@ MilleniumEncoder::MilleniumEncoder(int pin_a_in, int pin_b_in, bool is_inverted_
   period = 0;
   velocity = 0.0;
   meters = 0.0;
+  velocity_meters = 0.0;
   
   max_period = 200;
 }
@@ -28,7 +29,6 @@ void MilleniumEncoder::Update()
   
   if(a != prev_a)
   {
-    Serial.println("C");
     // Change
     if(a == b)
     {
@@ -66,8 +66,8 @@ void MilleniumEncoder::Update()
   
   if(millis() - last_count > max_period){ velocity = 0.0; }
   
-  //meters = CountsToMeters(counts);
-  //velocity = CountsToMeters(velocity);
+  meters = CountsToMeters(counts);
+  velocity_meters = CountsToMeters(velocity);
   
 }
 
