@@ -15,11 +15,19 @@ Robot::Robot()
   control_input->arm_angle = -1;
   control_input->arm_angle = -1;
   
-  sensors = new Sensors;
-  sensors->gyro = new GyroAccel();
-  sensors->gyro->Reset();
-  sensors->left_encoder = new MilleniumEncoder(11, 12, false);
-  sensors->right_encoder = new MilleniumEncoder(6, 7, true);
+  command = new Command;
+  command->control_state = DISABLED;
+  command->is_fresh_command = false;
+  command->csv_output = false;
+  command->left_power = 0;
+  command->right_power = 0;
+  command->arm_angle = -1;
+  command->box_angle = -1;
+  
+  gyro = new GyroAccel();
+  gyro->Reset();
+  left_encoder = new MilleniumEncoder(11, 12, false);
+  right_encoder = new MilleniumEncoder(6, 7, true);
   
   arm = new Servo;
   box = new Servo;
@@ -30,6 +38,8 @@ Robot::Robot()
   
   comm = new Comm();
   csv_output = false;
+  
+  //curr_controller = new TeleopController(control_input, state, command);
   
   DisableInputs();
 }
@@ -50,14 +60,14 @@ void Robot::UpdateComm()
     Serial.println("Watchdog timeout...");
   }
   
-  if(millis() - state_print_timer > 20)
+  if(millis() - state_print_timer > 200)
   {
     if(!csv_output)
     {
-      Serial.println();
+      /*Serial.println();
       Serial.println("Millenium Falgon State: ");
       Serial.print("Drive power: ");
-      Serial.print(control_input->left_power);
+      Serial.print(command->left_power);
       Serial.print(", ");
       Serial.println(control_input->right_power);
       Serial.print("Arm angle: ");
@@ -65,25 +75,25 @@ void Robot::UpdateComm()
       Serial.print("Box angle: ");
       Serial.println(control_input->box_angle);
       Serial.print("Gyro: ");
-      Serial.println(sensors->gyro->angle[2]);
+      Serial.println(gyro->angle[2]);
       Serial.print("Encoder: ");
-      Serial.print(sensors->left_encoder->meters);
+      Serial.print(left_encoder->meters);
       Serial.print(", ");
-      Serial.println(sensors->right_encoder->meters);
+      Serial.println(right_encoder->meters);
       Serial.print("Encoder Vel: ");
-      Serial.print(sensors->left_encoder->velocity);
+      Serial.print(left_encoder->velocity);
       Serial.print(", ");
-      Serial.println(sensors->right_encoder->velocity);
+      Serial.println(right_encoder->velocity);
       Serial.print("Encoder Vel Meters: ");
-      Serial.print(sensors->left_encoder->velocity_meters);
+      Serial.print(left_encoder->velocity_meters);
       Serial.print(", ");
-      Serial.println(sensors->right_encoder->velocity_meters);
+      Serial.println(right_encoder->velocity_meters);*/
     }
     else
     {
-      Serial.print(millis());
+      /*Serial.print(millis());
       Serial.print(",");
-      Serial.print(control_input->left_power);
+      Serial.print(command->left_power);
       Serial.print(",");
       Serial.print(control_input->right_power);
       Serial.print(",");
@@ -91,21 +101,21 @@ void Robot::UpdateComm()
       Serial.print(",");
       Serial.print(control_input->box_angle);
       Serial.print(",");
-      Serial.print(sensors->gyro->angle[2]);
+      Serial.print(gyro->angle[2]);
       Serial.print(",");
-      Serial.print(sensors->gyro->velocity[1]);
+      Serial.print(gyro->velocity[1]);
       Serial.print(",");
-      Serial.print(sensors->left_encoder->meters);
+      Serial.print(left_encoder->meters);
       Serial.print(",");
-      Serial.print(sensors->right_encoder->meters);
+      Serial.print(right_encoder->meters);
       Serial.print(",");
-      Serial.print(sensors->left_encoder->velocity);
+      Serial.print(left_encoder->velocity);
       Serial.print(",");
-      Serial.print(sensors->right_encoder->velocity);
+      Serial.print(right_encoder->velocity);
       Serial.print(",");
-      Serial.print(sensors->left_encoder->velocity_meters);
+      Serial.print(left_encoder->velocity_meters);
       Serial.print(",");
-      Serial.println(sensors->right_encoder->velocity_meters);
+      Serial.println(right_encoder->velocity_meters);*/
     }
     state_print_timer = millis();
   }
@@ -113,16 +123,21 @@ void Robot::UpdateComm()
 
 void Robot::UpdateSensors()
 {
-  sensors->gyro->Update();
-  sensors->left_encoder->Update();
-  sensors->right_encoder->Update();
+  gyro->Update();
+  left_encoder->Update();
+  right_encoder->Update();
 }
 
 // Updates the current controller based on the new command (if fresh) and sensor values
 // Then sets contorl_inputs based on the output of the controller
 void Robot::GenerateInputs()
 {
-  
+  control_state = command->control_state;
+  control_input->left_power = command->left_power;
+  control_input->right_power = command->right_power;
+  control_input->arm_angle = command->arm_angle;
+  control_input->box_angle = command->box_angle;
+  //curr_controller->Update();
 }
 
 void Robot::Actuate()
@@ -134,7 +149,7 @@ void Robot::Actuate()
   else
   {
     // Actuate Micro Speed Controller
-    comm->SendCommandToMicro(control_input->left_power, control_input->right-power);
+    comm->SendCommandToMicro(control_input->left_power, control_input->right_power);
     
     if(control_input->arm_angle == -1 && is_arm_attached)
     {

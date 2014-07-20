@@ -1,9 +1,10 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include "states.h"
 #include "comm.h"
 #include "gyro.h"
-#include "controller."
+#include "controller.h"
 #include "milleniumencoder.h"
 #include "Arduino.h"
 #include <Servo.h>
@@ -21,15 +22,19 @@ public:
   void DisableInputs();
 
   State *state;
-  Sensors *sensors;
   ControlInput *control_input;
   Command *command;
   
   Servo *arm, *box;
   
+  GyroAccel *gyro;
+  MilleniumEncoder *left_encoder, *right_encoder;
+  
   Comm *comm;
   
   ControlState control_state;
+  
+  //Controller *curr_controller;
   
   bool is_arm_attached;
   bool is_box_attached;

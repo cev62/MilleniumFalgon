@@ -3,7 +3,7 @@
 
 #include <SoftwareSerial.h>
 #include "Arduino.h"
-#include "controller.h"
+#include "states.h"
 
 class Comm
 {
