@@ -11,7 +11,7 @@ boolean up = false, down = false, left = false, right = false, key_change = fals
 int arm_state = 0;
 int box_state = 0;
 int timer;
-boolean csv_output = false;
+boolean csv_output = true;
 
 void setup()
 {

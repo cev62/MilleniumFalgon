@@ -3,14 +3,37 @@
 
 #include <SoftwareSerial.h>
 #include "Arduino.h"
-#include "controller.h"
+
+typedef enum ControlState
+{
+  DISABLED = 0,
+  TELEOP,
+  AUTO
+} ControlState;
+
+typedef struct Command
+{
+  int left_power;
+  int right_power;
+  int arm_angle;
+  int box_angle;
+  bool csv_output;
+  ControlState control_state;
+  bool is_fresh_command;
+} Command;
+
+typedef struct MicroCommand
+{
+  int left_power;
+  int right_power;
+} MicroCommand;
 
 class Comm
 {
 public:
   Comm();
   void Update(Command *target_command);
-  void SendCommandToMicro(int left_power, int right_power);
+  void SendCommandToMicro(MicroCommand *micro_command);
   void EncodeCommand(int *data, Command *target_command);
   int SerialAvailable(int mode);
   int SerialRead(int mode);

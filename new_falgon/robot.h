@@ -3,10 +3,27 @@
 
 #include "comm.h"
 #include "gyro.h"
-#include "controller."
 #include "milleniumencoder.h"
 #include "Arduino.h"
 #include <Servo.h>
+
+
+typedef struct State
+{
+public:
+  Command *curr_command;
+  Command *next_command;
+  MicroCommand *micro_command;
+  int left_power;
+  int right_power;
+  int arm_angle;
+  int box_angle;
+  ControlState control_state;
+  bool is_arm_attached;
+  bool is_box_attached;
+  bool csv_output;
+  long int watchdog_timer, state_print_timer;
+} State;
 
 
 
@@ -17,24 +34,14 @@ public:
   void UpdateComm();
   void UpdateSensors();
   void Actuate();
-  void GenerateInputs(); // Takes command and controllers into account
-  void DisableInputs();
+  void DecodeCommand(State *state);
+  void DisableState();
 
   State *state;
-  Sensors *sensors;
-  ControlInput *control_input;
-  Command *command;
-  
-  Servo *arm, *box;
-  
   Comm *comm;
-  
-  ControlState control_state;
-  
-  bool is_arm_attached;
-  bool is_box_attached;
-  bool csv_output;
-  long int watchdog_timer, state_print_timer;
+  GyroAccel *gyro;
+  MilleniumEncoder *left_encoder, *right_encoder;
+  Servo *arm, *box;
 };
 
 #endif

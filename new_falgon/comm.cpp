@@ -100,7 +100,7 @@ void Comm::EncodeCommand(int *data, Command *target_command)
   target_command->is_fresh_command = true;
 }
 
-void Comm::SendCommandToMicro(int left_power, int right_power)
+void Comm::SendCommandToMicro(MicroCommand *micro_command)
 {
   if(millis() - micro_timer < micro_timeout)
   {
@@ -109,10 +109,10 @@ void Comm::SendCommandToMicro(int left_power, int right_power)
   }  
   micro_timer = millis();
   
-  byte left_data = abs(left_power);
-  if(left_power < 0) { left_data |= 64; }
-  byte right_data = abs(right_power);
-  if(right_power < 0) { right_data |= 64; }
+  byte left_data = abs(micro_command->left_power);
+  if(micro_command->left_power < 0) { left_data |= 64; }
+  byte right_data = abs(micro_command->right_power);
+  if(micro_command->right_power < 0) { right_data |= 64; }
   
   Serial1.write(command_begin);
   Serial1.write(left_data);
