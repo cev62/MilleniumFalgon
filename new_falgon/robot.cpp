@@ -46,6 +46,7 @@ void Robot::UpdateComm()
   
   if(millis() - state->state_print_timer > 20)
   {
+    //comm->blue_serial.println(state->left_power);
     if(!state->csv_output)
     {
       Serial.println();

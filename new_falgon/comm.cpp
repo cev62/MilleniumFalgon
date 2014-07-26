@@ -5,11 +5,12 @@ blue_serial(9, 10)
 {
   Serial.begin(9600);
   Serial1.begin(9600);
+  blue_serial.begin(9600);
   
   micro_timer = millis();
   micro_timeout = 50;
   
-  data_length = 3;
+  data_length = 4;
   command_begin = 224;
   command_end = 192;
 }
@@ -28,11 +29,18 @@ void Comm::Update(Command *target_command)
         int input = SerialRead(mode);
         if(is_command_begun)
         {
-          if(input == command_end || data_index > data_length)
+          if(input == command_end && data_index == data_length)
           {
             EncodeCommand(data, target_command);
             is_command_begun = false;
+            //blue_serial.println("New Command");
+            //while(SerialAvailable(mode)) { SerialRead(mode); }
             break;
+          }
+          if((data_index >= data_length && input != command_end) || input > 127)
+          {
+            break;
+            Serial.println("BAD");
           }
           data[data_index] = input;
           data_index++;
@@ -98,6 +106,15 @@ void Comm::EncodeCommand(int *data, Command *target_command)
   target_command->control_state = TELEOP;
   
   target_command->is_fresh_command = true;
+  
+  blue_serial.print("cmd: ");
+  blue_serial.print(data[0]);
+  blue_serial.print(", ");
+  blue_serial.print(data[1]);
+  blue_serial.print(", ");
+  blue_serial.print(data[2]);
+  blue_serial.print(", ");
+  blue_serial.println(data[3]);
 }
 
 void Comm::SendCommandToMicro(MicroCommand *micro_command)

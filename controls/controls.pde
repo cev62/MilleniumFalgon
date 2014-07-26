@@ -11,12 +11,12 @@ boolean up = false, down = false, left = false, right = false, key_change = fals
 int arm_state = 0;
 int box_state = 0;
 int timer;
-boolean csv_output = true;
+boolean csv_output = true, reset_gyro = false;
 
 void setup()
 {
  println(Serial.list());
- serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM16", 9600);
+ serial = new Serial(this, /*"/dev/ttyACM1"*/ "COM14", 9600);
  command = new Command();
  timer = millis();
 }
@@ -35,8 +35,9 @@ void draw()
     sendCommand(serial, command);
     //println("(" + up + ", " + down + ", " + left + ", " + right + ")");
     key_change = false;
+    reset_gyro = false;
   }
-  if(millis() - timer > 100)
+  if(millis() - timer > 50)
   {
     sendCommand(serial, command);
     timer = millis();
@@ -73,6 +74,7 @@ void keyPressed()
   
   if(key == 'q'){csv_output = false; key_change = true; }
   if(key == 'w'){csv_output = true; key_change = true; }
+  if(key == 'r'){reset_gyro = true; key_change = true; }
 }
 
 void keyReleased()
@@ -90,7 +92,7 @@ void keyReleased()
 private class Command
 {
   // Fields contain the information of the command
-  boolean up, down, left, right, csv_output;
+  boolean up, down, left, right, csv_output, reset_gyro;
   int arm, box;
   Command()
   {
@@ -101,6 +103,7 @@ private class Command
     arm = 0;
     box = 0;
     csv_output = false;
+    reset_gyro = false;
   }
   
   /*
@@ -115,7 +118,7 @@ private class Command
     data[0] = (right ? 1 : 0) + (left ? 2 : 0) + (down ? 4 : 0) + (up ? 8 : 0);
     data[1] = arm;
     data[2] = box;
-    data[3] = csv_output ? 1 : 0;
+    data[3] = (csv_output ? 1 : 0) + (reset_gyro ? 2 : 0);
     return data;
   }
 }
